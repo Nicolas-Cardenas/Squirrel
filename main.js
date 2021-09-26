@@ -6,6 +6,7 @@ function leerDatos(url) {
     .then((res) => res.json())
     .then((res) => {
       crearTabla(res);
+      crearTablaCorrelacion(res);
     });
 }
 
@@ -50,6 +51,84 @@ function crearTabla(datos) {
   tabla.appendChild(tbod);
   body.appendChild(titulo);
   body.appendChild(tabla);
+}
+
+function crearTablaCorrelacion(datos) {
+  var contados = {};
+  var valores = [];
+
+  for (var i = 0; i < datos.length; i++) {
+    item = datos[i];
+    var events = item.events;
+    for (var j = 0; j < Object.keys(datos[i]).length; j++) {
+      if (!(events[j] in contados)) {
+        contados[events[j]] = 1;
+        valores.push({ event: events[j], val: correlacion(events[j], datos) });
+      }
+    }
+  }
+
+  valores = valores.sort(function (a, b) {
+    return b.val - a.val;
+  });
+
+  var body = document.body;
+  var titulo = document.createElement("H1");
+  titulo.innerText = "Correlation of events";
+  tbl = document.createElement("table");
+  tbl.classList.add("table");
+
+  thead = document.createElement("thead");
+  tr = document.createElement("tr");
+  th = document.createElement("th");
+  tr.appendChild(th).innerText = "#";
+  th = document.createElement("th");
+  tr.appendChild(th).innerText = "Event";
+  th = document.createElement("th");
+  tr.appendChild(th).innerText = "Correlation";
+
+  thead.appendChild(tr);
+  tbl.appendChild(thead);
+
+  tbod = document.createElement("tbody");
+
+  for (var i = 0; i < valores.length; i++) {
+    var tr = tbod.insertRow();
+    var td = tr.insertCell();
+    td.appendChild(document.createTextNode(i + 1));
+    var td = tr.insertCell();
+    td.appendChild(document.createTextNode(valores[i].event));
+    var td = tr.insertCell();
+    td.appendChild(document.createTextNode(valores[i].val));
+  }
+
+  tbl.appendChild(tbod);
+  body.appendChild(titulo);
+  body.appendChild(tbl);
+}
+
+function correlacion(evento, json) {
+  var array = [0, 0, 0, 0];
+  for (var index = 0; index < json.length; index++) {
+    var act = json[index];
+    var A = 0;
+    if (act.events.indexOf(evento) != -1) {
+      A += 1;
+    }
+    if (act.squirrel) {
+      A += 2;
+    }
+    array[A] += 1;
+  }
+  TN = array[0];
+  FN = array[1];
+  FP = array[2];
+  TP = array[3];
+
+  MCC =
+    (TP * TN - FP * FN) /
+    Math.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN));
+  return MCC;
 }
 
 leerDatos(url);
